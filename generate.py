@@ -47,7 +47,7 @@ def generate_dataset(n, d, k, rng, alpha, beta):
     """Generate a dataset"""
     mu = sample_mu(rng, k, d)
     cov = sample_cov(k, d, alpha, beta)
-    print(cov)
+
     data = []
     labels = []
     for i in range(k):
