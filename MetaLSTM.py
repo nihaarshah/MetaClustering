@@ -57,8 +57,8 @@ class MetaLSTM(nn.Module):
 
 
 if __name__ == "__main__":
-    m = MetaLSTM(input_size=2, hidden_size=32,
-                 output_size=5, n_layers=2, batch_size=1)
+    m = MetaLSTM(input_size=2, hidden_size=100,
+                 output_size=5, n_layers=1, batch_size=1)
     #inputs = torch.tensor([1, 2], dtype=torch.float).reshape(1, 2)
     # m.forward(inputs)
     # h_ = torch.zeros((1, 32))

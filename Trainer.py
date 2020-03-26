@@ -6,7 +6,7 @@ from torch import tensor, optim
 
 class Trainer:
 
-    def __init__(self, model, dataset, k=3, lmbda=0.5,):
+    def __init__(self, model, datasets, k=3, lmbda=0.5,):
 
         self.model = model
         self.lmbda = lmbda
@@ -15,7 +15,8 @@ class Trainer:
         self.optimizer = optim.Adam(
             self.model.parameters(), betas=(0.9, 0.98), eps=1e-09)
 
-        self.dataset = dataset
+        # self.dataset = dataset
+        self.datasets = datasets
         self.k = k
 
         self.running_loss = 0.0
@@ -26,12 +27,14 @@ class Trainer:
     def neighbor_loss(self, pred, neighbors):
         pred_log_prob = F.softmax(pred, dim=1)
         neighbor_prob = F.log_softmax(neighbors,  dim=1)
-        # print(pred_log_prob)
-        # print(neighbor_prob)
+
         return self.kl_loss(neighbor_prob, pred_log_prob)
 
     def init_epoch(self):
-        self.dataset.init_epoch()
+        # self.dataset.init_epoch()
+        for i in range(len(self.datasets)):
+            self.datasets[i].init_epoch()
+
         self.model.initialize()
 
     def iteration(self, inputs, neighbors, labels):
@@ -50,30 +53,31 @@ class Trainer:
 
         loss = self.lmbda * \
             self.class_loss(outputs, labels) + (1-self.lmbda) * n_loss
-        print(loss)
+        # print(loss)
         loss.backward()
         self.optimizer.step()
 
-        self.running_loss += loss.item()
+        return loss.item()
 
     def epoch(self, epoch):
-        self.running_loss = 0.0
+        epoch_loss = 0.0
         self.init_epoch()
-        for i, (inputs, labels) in enumerate(self.dataset):
-            if i >= self.k:
-                neighbors = self.dataset.query_knn_index(inputs, self.k)
-                self.iteration(inputs, neighbors,  labels)
-            self.dataset.add_to_knn_index(inputs)
+        for d_ind in range(len(self.datasets)):
+            dataset_loss = 0.0
+            for i, (inputs, labels) in enumerate(self.datasets[d_ind]):
+                if i >= self.k:
+                    neighbors = self.datasets[d_ind].query_knn_index(
+                        inputs, self.k)
+                    dataset_loss += self.iteration(inputs, neighbors,  labels)
+                self.datasets[d_ind].add_to_knn_index(inputs)
 
-            if i % 10 == 9:
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, self.running_loss / 10))
-                self.running_loss = 0.0
+            epoch_loss += dataset_loss/len(self.datasets[d_ind])
+        return epoch_loss/len(self.datasets)
 
     def train(self, epochs=10):
         # self.model.train()
         for epoch in range(epochs):
-            self.epoch(epoch)
+            print("Epoch %d, loss:%.3f" % (epoch, self.epoch(epoch)))
 
 
 if __name__ == "__main__":
@@ -84,16 +88,18 @@ if __name__ == "__main__":
 
     k = 4
     d = 2
-    data, labels = generate_dataset(25, d, k, 10, 4, 6)
+    # data, labels = generate_dataset(25, d, k, 10, 4, 6)
+    # data, labels = generate_dataset(25, d, k, 10, 4, 6)
     # plt.scatter(x=data[:, 0], y=data[:, 1], c=labels)
 
     meta_lstm = MetaLSTM(input_size=d, hidden_size=32,
                          output_size=k, n_layers=2, batch_size=1)
 
-    dataset = Dataset(data, labels)
+    dataset = Dataset(*generate_dataset(25, d, k, 10, 4, 6))
 
-    trainer = Trainer(meta_lstm, dataset=dataset)
-    trainer.train(2)
+    trainer = Trainer(meta_lstm, datasets=[Dataset(
+        *generate_dataset(25, d, k, 10, 4, 6)) for _ in range(10)])
+    trainer.train(100)
     # kl = nn.KLDivLoss(reduce='batchmean')
     # outputs = tensor([[1.0, 2.0, 3.1, 1.02], [24.1, 2, 3, 4]])
     # outputs2 = tensor([[1.0, 2.0, 2, 1.02], [19, 2, 3, 4]])
