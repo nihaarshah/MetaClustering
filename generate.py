@@ -95,13 +95,13 @@ def generate_nonlinear_dataset(n, d, k, rng, alpha, beta, a_nl, b_nl):
 
 
 if __name__ == "__main__":
-    # data, labels = generate_dataset(25, 2, 4, 10, 4, 6)
+    data, labels = generate_dataset(n=25, d=2, k=4, rng=10, alpha=1, beta=2)
 
-    # plt.scatter(x=data[:, 0], y=data[:, 1], c=labels)
-
+    plt.scatter(x=data[:, 0], y=data[:, 1], c=labels)
+    plt.show()
     data, labels = generate_nonlinear_dataset(n=25, d=2, k=4, rng=10,
-                                              alpha=1, beta=2,
-                                              a_nl=10, b_nl=2
+                                              alpha=10, beta=2,
+                                              a_nl=12, b_nl=2
                                               )
 
     plt.scatter(x=data[:, 0], y=data[:, 1], c=labels)

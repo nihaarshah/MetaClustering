@@ -83,7 +83,7 @@ class Trainer:
 if __name__ == "__main__":
     from Dataset import Dataset
     from MetaLSTM import MetaLSTM
-    from generate import generate_dataset
+    from generate import generate_dataset, generate_nonlinear_dataset
     import matplotlib.pyplot as plt
 
     k = 4
@@ -92,13 +92,21 @@ if __name__ == "__main__":
     # data, labels = generate_dataset(25, d, k, 10, 4, 6)
     # plt.scatter(x=data[:, 0], y=data[:, 1], c=labels)
 
-    meta_lstm = MetaLSTM(input_size=d, hidden_size=32,
+    meta_lstm = MetaLSTM(input_size=d, hidden_size=100,
                          output_size=k, n_layers=2, batch_size=1)
 
-    dataset = Dataset(*generate_dataset(25, d, k, 10, 4, 6))
+    gauss_datasets = [Dataset(
+        *generate_dataset(n=25, d=2, k=4, rng=10, alpha=1, beta=2))
+        for _ in range(5)]
 
-    trainer = Trainer(meta_lstm, datasets=[Dataset(
-        *generate_dataset(25, d, k, 10, 4, 6)) for _ in range(10)])
+    nonlinear_datasets = [Dataset(
+        *generate_nonlinear_dataset(n=25, d=2, k=4, rng=10,
+                                    alpha=10, beta=2,
+                                    a_nl=12, b_nl=2
+                                    ))
+                          for _ in range(5)]
+
+    trainer = Trainer(meta_lstm, datasets=gauss_datasets+nonlinear_datasets)
     trainer.train(100)
     # kl = nn.KLDivLoss(reduce='batchmean')
     # outputs = tensor([[1.0, 2.0, 3.1, 1.02], [24.1, 2, 3, 4]])
